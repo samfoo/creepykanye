@@ -5,20 +5,6 @@
             opencv_highgui
             opencv_imgproc]))
 
-(defn- path->image [path]
-  (let [_ (println path)
-        img (opencv_highgui/cvLoadImage path)
-        gray-img (com.googlecode.javacv.cpp.opencv_core$IplImage/create
-                  (.width img)
-                  (.height img)
-                  opencv_core/IPL_DEPTH_8U
-                  1)]
-    (opencv_imgproc/cvCvtColor img gray-img opencv_imgproc/CV_BGR2GRAY)
-    gray-img))
-
-(def test-image
-  (path->image "/Users/sam/Desktop/test-input.png"))
-
 (defn detector []
   (let [config (-> "haarcascade_frontalface_alt.xml"
                    (clojure.java.io/resource)
@@ -37,10 +23,12 @@
                            opencv_objdetect/CV_HAAR_SCALE_IMAGE
                            min-size
                            max-size)
-        {:x (.x faces)
-         :y (.y faces)
-         :width (.width faces)
-         :height (.height faces)}))))
+        (if (= 0 (.capacity faces))
+          nil
+          {:x (.x faces)
+           :y (.y faces)
+           :width (.width faces)
+           :height (.height faces)})))))
 
 (defn center-point [rect]
   (println rect)
