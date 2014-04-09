@@ -15,7 +15,7 @@
     (.load cascade config)
     (fn [image]
       (let [faces (com.googlecode.javacv.cpp.opencv_core$CvRect. nil)
-            min-size (com.googlecode.javacv.cpp.opencv_core$CvSize. 30 30)
+            min-size (com.googlecode.javacv.cpp.opencv_core$CvSize. 100 100)
             max-size (com.googlecode.javacv.cpp.opencv_core$CvSize. 500 500)]
         (.detectMultiScale cascade image
                            faces

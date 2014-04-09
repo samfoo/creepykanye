@@ -1,6 +1,7 @@
 (ns creepykanye.core
   (:require [creepykanye.recognize]
             [creepykanye.detect :as faces]
+            [creepykanye.images :as images]
             [seesaw.graphics :as graphics]
             [seesaw.core :refer :all]
             [seesaw.bind :as b])
@@ -30,7 +31,7 @@
   (let [detector (faces/detector)]
     (loop []
       (let [cap (grab-image grabber)
-            detected-face (detector cap)]
+            detected-face (detector (images/normalize cap))]
         (reset! face detected-face)
         (reset! image (.getBufferedImage cap))
         (repaint! screen))
