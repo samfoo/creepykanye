@@ -1,14 +1,13 @@
-# creepykanye
+# Creepy Kanye
 
-A Clojure library designed to ... well, that part is up to you.
+A clojure app to recognize faces from a webcam.
 
-## Usage
+## Installation
 
-FIXME
+JavaCV is a monstrous beast and a massive pain in the ass to install. Install
+the dependencies with `babushka`
 
-## License
+    $ sh -c "`curl https://babushka.me/up`" #install babushka
+    $ babushka javacv #... wait to finish
 
-Copyright © 2014 FIXME
-
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+This is only working for OSX at the moment.

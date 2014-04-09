@@ -1,4 +1,4 @@
-(defproject creepykanye "0.1.0-SNAPSHOT"
+(defproject creepykanye "0.1.0"
   :description "Creepily recognize people's faces and play their theme song."
   :url "http://example.com/FIXME"
   :license {:name "GPLv3"
