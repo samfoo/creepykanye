@@ -7,7 +7,8 @@
     opencv_imgproc]))
 
 (defn face-recognizer []
-  (opencv_contrib/createFisherFaceRecognizer 0 10000))
+  (opencv_contrib/createLBPHFaceRecognizer 1 8 8 8 10000))
+;;  (opencv_contrib/createFisherFaceRecognizer 0 10000))
 
 (defn- name->label [name]
   (let [num (subs name 0 2)

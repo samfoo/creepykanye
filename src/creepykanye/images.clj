@@ -36,8 +36,11 @@
                               (:y face)
                               (:width face)
                               (:height face))
-        scaled (.getScaledInstance cropped w h BufferedImage/SCALE_FAST)
-        scaled-bi (BufferedImage. w h BufferedImage/TYPE_BYTE_GRAY)
-        g (.getGraphics scaled-bi)]
-    (.drawImage g scaled 0 0 nil)
-    scaled-bi))
+        ;; scaled (.getScaledInstance cropped w h BufferedImage/SCALE_SMOOTH)
+        cropped-w (.getWidth cropped)
+        cropped-h (.getHeight cropped)
+        scaled (BufferedImage. w h (.getType img))
+        g (.getGraphics scaled)]
+    (.drawImage g cropped 0 0 w h 0 0 cropped-w cropped-h nil)
+    (.dispose g)
+    scaled))
