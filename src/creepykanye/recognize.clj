@@ -27,17 +27,6 @@
     (opencv_imgproc/cvCvtColor img gray-img opencv_imgproc/CV_BGR2GRAY)
     gray-img))
 
-(defn normalize-ipl [image]
-  (let [w (int (/ (.width image) 2))
-        h (int (/ (.height image) 2))
-        gray-img (com.googlecode.javacv.cpp.opencv_core$IplImage/create
-                  (.width image) (.height image) opencv_core/IPL_DEPTH_8U 1)
-        resized-img (com.googlecode.javacv.cpp.opencv_core$IplImage/create
-                    w h opencv_core/IPL_DEPTH_8U 1)]
-    (opencv_imgproc/cvCvtColor image gray-img opencv_imgproc/CV_BGR2GRAY)
-    (opencv_imgproc/cvResize gray-img resized-img)
-    resized-img))
-
 (defn- images->mat-vector [images]
   (let [mat-vector (com.googlecode.javacv.cpp.opencv_core$MatVector.
                     (count images))]
@@ -51,8 +40,7 @@
         files (map (fn [f]
                      [(name->label (.getName f))
                       (path->image (.getAbsolutePath f))])
-                   only-files)]
-    files))
+                   only-files)] files))
 
 (defn train [recognizer]
   (let [l-and-i (labels-and-images)

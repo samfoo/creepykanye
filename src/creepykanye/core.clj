@@ -7,7 +7,6 @@
             [seesaw.bind :as b])
   (:gen-class :main true)
   (:import [javax.imageio.ImageIO]
-           [java.awt.image BufferedImage]
            [com.googlecode.javacv
             CanvasFrame
             FrameGrabber
@@ -29,44 +28,32 @@
                                     (:width face) (:height face))
                      (graphics/style :foreground :green :stroke 5)))))
 
-(defn normalized-image [image]
-  (let [w (/ (.getWidth image) 2)
-        h (/ (.getHeight image) 2)
-        scaled (.getScaledInstance image w h java.awt.Image/SCALE_FAST)
-        gray (BufferedImage. w h BufferedImage/TYPE_BYTE_GRAY)]
-    (let [g (.getGraphics gray)]
-      (.drawImage g scaled 0 0 nil)
-      (.dispose g))
-    gray))
-
-(defn bi->ipl [bi]
-  (com.googlecode.javacv.cpp.opencv_core$IplImage/createFrom bi))
-
 (defn build-corpus [name id image face]
   (loop []
     (when (and
            (not (nil? @face))
            (not (nil? @image)))
-      (let [normal (normalized-image @image)
+      (let [normal (images/bi->grayscale @image)
+            cropped-to-face (images/bi->cropped-to-face normal @face 328 328)
             file (clojure.java.io/file
                   (format "corpus/%02d-%s-%d.png"
                           id
                           name
                           (System/currentTimeMillis)))]
-        (javax.imageio.ImageIO/write normal "png" file)
+        (javax.imageio.ImageIO/write cropped-to-face "png" file)
         (print ".")
         (flush)
         (Thread/sleep 500)))
      (recur)))
 
-(defn show-images [grabber raw image face screen]
+(defn show-images [grabber image face screen]
   (let [detector (faces/detector)]
     (loop []
       (let [cap (grab-image grabber)
-            detected-face (detector (images/normalize cap))]
-        (reset! raw cap)
+            detected-face (detector
+                            (images/ipl->grayscale cap))]
         (reset! face detected-face)
-        (reset! image (.getBufferedImage cap))
+        (reset! image (images/ipl->bi cap))
         (repaint! screen))
       (recur))))
 
@@ -78,23 +65,25 @@
              (fn []
                (build-corpus name id image face))))))
 
-(defn start-recognizing [raw face opts]
+(defn predict-frames [image face recognizer]
+  (loop []
+    (let [f @face
+          i @image]
+      (when (not (or (nil? f) (nil? i)))
+        (let [cropped (-> i
+                          (images/bi->grayscale)
+                          (images/bi->cropped-to-face f 328 328))
+              who (recognizer (images/bi->ipl cropped))]
+          (println "-> i think this is" who "\b")))
+      (recur))))
+
+(defn start-recognizing [image face opts]
   (let [recognizer (recognize/recognizer)]
-    (.start (Thread.
-             (fn []
-               (loop []
-                 (when (and
-                        (not (nil? @face))
-                        (not (nil? @raw)))
-                   (let [normal (recognize/normalize-ipl @raw)
-                         who (recognizer normal)]
-                     (println "-> i think this is" who "\b")))
-                 (recur)))))))
+    (.start (Thread. (fn [] (predict-frames image face recognizer))))))
 
 (defn -main [& args]
   (let [[command & opts] args
         image (atom nil)
-        raw (atom nil)
         face (atom nil)
         grabber (OpenCVFrameGrabber. 0)]
     (.start grabber)
@@ -112,9 +101,9 @@
 
       (condp = command
         "record" (start-recording image face opts)
-        "recognize" (start-recognizing raw face opts)
+        "recognize" (start-recognizing image face opts)
         nil)
 
       (.start (Thread.
                (fn []
-                 (show-images grabber raw image face screen)))))))
+                 (show-images grabber image face screen)))))))
