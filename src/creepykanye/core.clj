@@ -28,13 +28,17 @@
                                     (:width face) (:height face))
                      (graphics/style :foreground :green :stroke 5)))))
 
+(def FACE_IMG_SIZE 328)
+
 (defn build-corpus [name id image face]
   (loop []
     (when (and
            (not (nil? @face))
            (not (nil? @image)))
       (let [normal (images/bi->grayscale @image)
-            cropped-to-face (images/bi->cropped-to-face normal @face 328 328)
+            cropped-to-face (images/bi->cropped-to-face normal @face
+                                                        FACE_IMG_SIZE
+                                                        FACE_IMG_SIZE)
             file (clojure.java.io/file
                   (format "corpus/%02d-%s-%d.png"
                           id
@@ -72,7 +76,9 @@
       (when (not (or (nil? f) (nil? i)))
         (let [cropped (-> i
                           (images/bi->grayscale)
-                          (images/bi->cropped-to-face f 328 328))
+                          (images/bi->cropped-to-face f
+                                                      FACE_IMG_SIZE
+                                                      FACE_IMG_SIZE))
               who (recognizer (images/bi->ipl cropped))]
           (println "-> i think this is" who "\b")))
       (recur))))
