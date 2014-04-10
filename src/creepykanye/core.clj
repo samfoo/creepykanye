@@ -1,5 +1,5 @@
 (ns creepykanye.core
-  (:require [creepykanye.recognize]
+  (:require [creepykanye.recognize :as recognize]
             [creepykanye.detect :as faces]
             [creepykanye.images :as images]
             [seesaw.graphics :as graphics]
@@ -7,6 +7,7 @@
             [seesaw.bind :as b])
   (:gen-class :main true)
   (:import [javax.imageio.ImageIO]
+           [java.awt.image BufferedImage]
            [com.googlecode.javacv
             CanvasFrame
             FrameGrabber
@@ -28,31 +29,68 @@
                                     (:width face) (:height face))
                      (graphics/style :foreground :green :stroke 5)))))
 
-(defn build-corpus [image face]
+(defn normalized-image [image]
+  (let [w (/ (.getWidth image) 2)
+        h (/ (.getHeight image) 2)
+        scaled (.getScaledInstance image w h java.awt.Image/SCALE_FAST)
+        gray (BufferedImage. w h BufferedImage/TYPE_BYTE_GRAY)]
+    (let [g (.getGraphics gray)]
+      (.drawImage g scaled 0 0 nil)
+      (.dispose g))
+    gray))
+
+(defn bi->ipl [bi]
+  (com.googlecode.javacv.cpp.opencv_core$IplImage/createFrom bi))
+
+(defn build-corpus [name id image face]
   (loop []
-    (when (not (nil? @face))
-      (let [file (clojure.java.io/file
-                  (str
-                   "corpus/" (System/currentTimeMillis) ".png"))]
-        (println "saving to " (.getAbsolutePath file))
-        (javax.imageio.ImageIO/write @image "png" file)
-        (println "sleeping")
-        (Thread/sleep 500)
-        (println "done sleeping")))
+    (when (and
+           (not (nil? @face))
+           (not (nil? @image)))
+      (let [normal (normalized-image @image)
+            file (clojure.java.io/file
+                  (format "corpus/%02d-%s-%d.png"
+                          id
+                          name
+                          (System/currentTimeMillis)))]
+        (javax.imageio.ImageIO/write normal "png" file)
+        (print ".")
+        (flush)
+        (Thread/sleep 500)))
      (recur)))
 
-(defn show-images [grabber image face screen]
+(defn show-images [grabber raw image face screen]
   (let [detector (faces/detector)]
     (loop []
       (let [cap (grab-image grabber)
             detected-face (detector (images/normalize cap))]
+        (reset! raw cap)
         (reset! face detected-face)
         (reset! image (.getBufferedImage cap))
         (repaint! screen))
       (recur))))
 
-(defn -main []
-  (let [image (atom nil)
+(defn start-recording [image face opts]
+  (let [name (first opts)
+        id (Integer/parseInt (second opts))]
+    (println "-> saving images of" name "with id" id)
+    (.start (Thread.
+             (fn []
+               (build-corpus name id image face))))))
+
+(defn start-recognizing [raw face opts]
+  (let [recognizer (recognize/recognizer)]
+    (loop []
+      (when (not (nil? @face))
+        (let [normal (recognize/normalize-ipl @raw)
+              who (recognizer normal)]
+          (print "-> i think this is" who)
+          (flush))))))
+
+(defn -main [& args]
+  (let [[command & opts] args
+        image (atom nil)
+        raw (atom nil)
         face (atom nil)
         grabber (OpenCVFrameGrabber. 0)]
     (.start grabber)
@@ -67,7 +105,12 @@
                         :visible? true
                         :on-close :dispose
                         :content screen)]
-      (future
-        (build-corpus image face))
-      (future
-        (show-images grabber image face screen)))))
+
+      (condp = command
+        "record" (start-recording image face opts)
+        "recognize" (start-recognizing raw face opts)
+        nil)
+
+      (.start (Thread.
+               (fn []
+                 (show-images grabber raw image face screen)))))))

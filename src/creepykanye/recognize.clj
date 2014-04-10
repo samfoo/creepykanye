@@ -10,7 +10,7 @@
   (opencv_contrib/createFisherFaceRecognizer 0 10000))
 
 (defn- name->label [name]
-  (let [num (subs name 7 9)
+  (let [num (subs name 0 2)
         trimmed (if (.startsWith num "0")
                   (subs num 1)
                   num)]
@@ -27,6 +27,17 @@
     (opencv_imgproc/cvCvtColor img gray-img opencv_imgproc/CV_BGR2GRAY)
     gray-img))
 
+(defn normalize-ipl [image]
+  (let [w (int (/ (.width image) 2))
+        h (int (/ (.height image) 2))
+        gray-img (com.googlecode.javacv.cpp.opencv_core$IplImage/create
+                  (.width image) (.height image) opencv_core/IPL_DEPTH_8U 1)
+        resized-img (com.googlecode.javacv.cpp.opencv_core$IplImage/create
+                    w h opencv_core/IPL_DEPTH_8U 1)]
+    (opencv_imgproc/cvCvtColor image gray-img opencv_imgproc/CV_BGR2GRAY)
+    (opencv_imgproc/cvResize gray-img resized-img)
+    resized-img))
+
 (defn- images->mat-vector [images]
   (let [mat-vector (com.googlecode.javacv.cpp.opencv_core$MatVector.
                     (count images))]
@@ -35,7 +46,7 @@
     mat-vector))
 
 (defn labels-and-images []
-  (let [directory (clojure.java.io/file "/Users/sam/Downloads/yalefaces/")
+  (let [directory (clojure.java.io/file "corpus/")
         only-files (filter #(.isFile %) (file-seq directory))
         files (map (fn [f]
                      [(name->label (.getName f))
@@ -53,11 +64,15 @@
         image-array (images->mat-vector images)]
     (.train recognizer image-array label-array)))
 
-(def test-image
-  (path->image "/Users/sam/Desktop/test-input.png"))
-
 (defn trained []
   (let [recognizer (face-recognizer)]
     (train recognizer)
     recognizer))
 
+(defn recognizer []
+  (let [r (trained)]
+    (fn [image]
+      (let [label (int-array 1)
+            confidence (double-array 1)]
+        (.predict r image label confidence)
+        {:label (aget label 0) :confidence (aget confidence 0)}))))
