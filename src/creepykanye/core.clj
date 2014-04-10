@@ -80,12 +80,16 @@
 
 (defn start-recognizing [raw face opts]
   (let [recognizer (recognize/recognizer)]
-    (loop []
-      (when (not (nil? @face))
-        (let [normal (recognize/normalize-ipl @raw)
-              who (recognizer normal)]
-          (print "-> i think this is" who)
-          (flush))))))
+    (.start (Thread.
+             (fn []
+               (loop []
+                 (when (and
+                        (not (nil? @face))
+                        (not (nil? @raw)))
+                   (let [normal (recognize/normalize-ipl @raw)
+                         who (recognizer normal)]
+                     (println "-> i think this is" who "\b")))
+                 (recur)))))))
 
 (defn -main [& args]
   (let [[command & opts] args
