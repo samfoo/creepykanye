@@ -94,13 +94,12 @@
           (reset! name (format
                         "label: %2d, conf: %4.2f"
                         (:label who)
-                        (:confidence who)))
-          (println "-> i think this is" who "\b")))
+                        (:confidence who)))))
       (recur))))
 
-(defn start-recognizing [image face opts]
+(defn start-recognizing [image face name opts]
   (let [recognizer (recognize/recognizer)]
-    (.start (Thread. (fn [] (predict-frames image face recognizer))))))
+    (.start (Thread. (fn [] (predict-frames image face name recognizer))))))
 
 (defn -main [& args]
   (let [[command & opts] args
