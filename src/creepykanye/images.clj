@@ -31,16 +31,13 @@
   (.getBufferedImage ipl))
 
 (defn bi->cropped-to-face [img face w h]
-  (let [center-x (int (+ (:x face) (/ (:width face) 2)))
-        center-y (int (+ (:y face) (/ (:height face) 2)))
-
-        left (-> center-x
-                 (- (/ w 2))
-                 (Math/max 0)
-                 (Math/min (- (.getWidth img) w)))
-        top (-> center-y
-                (- (/ h 2))
-                (Math/max 0)
-                (Math/min (- (.getHeight img) h)))]
-    (println "left" left "top" top "w" w "h" h)
-    (.getSubimage img left top w h)))
+  (let [cropped (.getSubimage img
+                              (:x face)
+                              (:y face)
+                              (:width face)
+                              (:height face))
+        scaled (.getScaledInstance cropped w h BufferedImage/SCALE_FAST)
+        scaled-bi (BufferedImage. w h BufferedImage/TYPE_BYTE_GRAY)
+        g (.getGraphics scaled-bi)]
+    (.drawImage g scaled 0 0 nil)
+    scaled-bi))
