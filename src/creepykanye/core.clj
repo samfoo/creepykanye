@@ -3,10 +3,12 @@
             [creepykanye.detect :as faces]
             [creepykanye.images :as images]
             [seesaw.graphics :as graphics]
+            [seesaw.color :as color]
             [seesaw.core :refer :all]
             [seesaw.bind :as b])
   (:gen-class :main true)
   (:import [javax.imageio.ImageIO]
+           [java.awt Font]
            [com.googlecode.javacv
             CanvasFrame
             FrameGrabber
@@ -19,14 +21,23 @@
 (defn- display-image [canvas image]
   (.showImage canvas image))
 
-(defn paint-image [c g image face]
+(defn paint-image [c g image face name]
   (when (not (nil? image))
-    (.drawImage g image 0 0 (.getWidth image) (.getHeight image) nil)
-    (when (not (nil? face))
-      (graphics/draw g
-                     (graphics/rect (:x face) (:y face)
-                                    (:width face) (:height face))
-                     (graphics/style :foreground :green :stroke 5)))))
+    (.drawImage g image 0 0 (.getWidth image) (.getHeight image) nil))
+
+  (when (not (nil? face))
+    (graphics/draw g
+                   (graphics/rect (:x face) (:y face)
+                                  (:width face) (:height face))
+                   (graphics/style :foreground :green :stroke 5)))
+
+  (when (not (or
+              (nil? name)
+              (nil? face)))
+    (do
+      (.setColor g (color/to-color "#FF0000"))
+      (.setFont g (Font. "Helvetica" Font/BOLD 24))
+      (.drawString g name (:x face) (+ (:height face) (:y face))))))
 
 (def FACE_IMG_SIZE 328)
 
@@ -69,7 +80,7 @@
              (fn []
                (build-corpus name id image face))))))
 
-(defn predict-frames [image face recognizer]
+(defn predict-frames [image face name recognizer]
   (loop []
     (let [f @face
           i @image]
@@ -80,6 +91,10 @@
                                                       FACE_IMG_SIZE
                                                       FACE_IMG_SIZE))
               who (recognizer (images/bi->ipl cropped))]
+          (reset! name (format
+                        "label: %2d, conf: %4.2f"
+                        (:label who)
+                        (:confidence who)))
           (println "-> i think this is" who "\b")))
       (recur))))
 
@@ -91,12 +106,13 @@
   (let [[command & opts] args
         image (atom nil)
         face (atom nil)
+        name (atom nil)
         grabber (OpenCVFrameGrabber. 0)]
     (.start grabber)
     (let [width (.getImageWidth grabber)
           height (.getImageHeight grabber)
           screen (canvas :id :screen
-                         :paint (fn [c g] (paint-image c g @image @face))
+                         :paint (fn [c g] (paint-image c g @image @face @name))
                          :background :black)
           window (frame :title "Camera"
                         :width width
@@ -107,7 +123,7 @@
 
       (condp = command
         "record" (start-recording image face opts)
-        "recognize" (start-recognizing image face opts)
+        "recognize" (start-recognizing image face name opts)
         nil)
 
       (.start (Thread.
