@@ -46,3 +46,12 @@ dep "javacv" do
     end
   }
 end
+
+dep "opencv.lib" do
+  installs "opencv"
+end
+
+dep "creepykanye" do
+  requires "javacv"
+  requires "opencv.lib"
+end

@@ -8,6 +8,6 @@ JavaCV is a monstrous beast and a massive pain in the ass to install. Install
 the dependencies with `babushka`
 
     $ sh -c "`curl https://babushka.me/up`" #install babushka
-    $ babushka javacv #... wait to finish
+    $ babushka creepykanye #... wait to finish
 
 This is only working for OSX at the moment.
