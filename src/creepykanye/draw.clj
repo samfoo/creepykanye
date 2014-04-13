@@ -26,12 +26,21 @@
                        (graphics/style :foreground (choose-color i) :stroke 5))
         (recur (rest os) (inc i))))))
 
-(defn points [g points]
-  (doseq [p points]
-    (graphics/draw g
-                   (graphics/circle (:x p) (:y p) 2)
-                   (graphics/style :foreground :lime
-                                   :background :lime))))
+(defn points
+  ([g points] (points g points 0 0))
+  ([g points x-offset y-offset] 
+     (doseq [p points]
+       (graphics/draw g
+                      (graphics/circle (+ x-offset (:x p))
+                                       (+ y-offset (:y p))
+                                       1)
+                      (graphics/style :foreground :lime
+                                      :background :lime)))))
+
+(defn region-points [g objects]
+  (doseq [o objects]
+    (when (not (empty? (:points o)))
+      (points g (:points o) (:x o) (:y o)))))
 
 (defn label [g objects]
   (loop [os objects

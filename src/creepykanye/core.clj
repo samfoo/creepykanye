@@ -25,6 +25,9 @@
     (.drawImage g image 0 0 (.getWidth image) (.getHeight image) nil))
 
   (when (not (empty? faces))
+    (draw/region-points g faces))
+
+  (when (not (empty? faces))
     (draw/outline g faces))
 
   (when (not (empty? faces))
@@ -53,12 +56,21 @@
         prediction (recognizer cropped)]
     (merge face prediction)))
 
-(defn- detect-and-recognize [detector recognizer img]
-  (let [detected-faces (detector img)]
-    (map #(predict-face % img recognizer) detected-faces)))
+(defn- key-points-for [face image]
+  (let [cropped (images/ipl->cropped-to-face image
+                                             face
+                                             corpus/NORMAL_W
+                                             corpus/NORMAL_H)
+        points (detect/key-points cropped)]
+    (assoc face :points points)))
 
 (defn- detect [detector img]
-  (detector img))
+  (let [faces (detector img)]
+    (map #(key-points-for % img) faces)))
+
+(defn- detect-and-recognize [detector recognizer img]
+  (let [detected-faces (detect detector img)]
+    (map #(predict-face % img recognizer) detected-faces)))
 
 (defn show-images [grabber image faces screen recognize?]
   (let [detector (detect/face-detector)
