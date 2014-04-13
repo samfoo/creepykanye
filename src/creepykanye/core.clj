@@ -3,13 +3,11 @@
             [creepykanye.detect :as detect]
             [creepykanye.images :as images]
             [creepykanye.corpus :as corpus]
-            [seesaw.graphics :as graphics]
-            [seesaw.color :as color]
+            [creepykanye.draw :as draw]
             [seesaw.core :refer :all]
             [seesaw.bind :as b])
   (:gen-class :main true)
   (:import [javax.imageio.ImageIO]
-           [java.awt Font]
            [com.googlecode.javacv
             CanvasFrame
             FrameGrabber
@@ -22,34 +20,15 @@
 (defn- display-image [canvas image]
   (.showImage canvas image))
 
-(defn- outline-faces [g faces]
-  (doseq [face faces]
-    (graphics/draw g
-                   (graphics/rect (:x face) (:y face)
-                                  (:width face) (:height face))
-                   (graphics/style :foreground :green :stroke 5))))
-
-(defn- label-faces [g faces]
-  (doseq [face faces]
-    (let [name (:label face)]
-      (when (not (nil? name))
-        (do
-          (.setColor g (color/to-color "#FF0000"))
-          (.setFont g (Font. "Helvetica" Font/BOLD 24))
-          (.drawString g
-                       (corpus/id->name name)
-                       (:x face)
-                       (+ (:height face) (:y face))))))))
-
 (defn paint-image [c g image faces]
   (when (not (nil? image))
     (.drawImage g image 0 0 (.getWidth image) (.getHeight image) nil))
 
   (when (not (empty? faces))
-    (outline-faces g faces))
+    (draw/outline g faces))
 
   (when (not (empty? faces))
-    (label-faces g faces)))
+    (draw/label g faces)))
 
 (defn build-corpus [name id image faces]
   (loop []
