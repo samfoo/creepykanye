@@ -1,7 +1,8 @@
 (ns creepykanye.core
   (:require [creepykanye.recognize :as recognize]
-            [creepykanye.detect :as faces]
+            [creepykanye.detect :as detect]
             [creepykanye.images :as images]
+            [creepykanye.corpus :as corpus]
             [seesaw.graphics :as graphics]
             [seesaw.color :as color]
             [seesaw.core :refer :all]
@@ -35,7 +36,10 @@
         (do
           (.setColor g (color/to-color "#FF0000"))
           (.setFont g (Font. "Helvetica" Font/BOLD 24))
-          (.drawString g (str name) (:x face) (+ (:height face) (:y face))))))))
+          (.drawString g
+                       (corpus/id->name name)
+                       (:x face)
+                       (+ (:height face) (:y face))))))))
 
 (defn paint-image [c g image faces]
   (when (not (nil? image))
@@ -47,8 +51,6 @@
   (when (not (empty? faces))
     (label-faces g faces)))
 
-(def FACE_IMG_SIZE 328)
-
 (defn build-corpus [name id image faces]
   (loop []
     (when (and
@@ -56,24 +58,19 @@
            (not (nil? @image)))
       (let [normal (images/bi->grayscale @image)
             cropped-to-face (images/bi->cropped-to-face normal (first @faces)
-                                                        FACE_IMG_SIZE
-                                                        FACE_IMG_SIZE)
-            file (clojure.java.io/file
-                  (format "corpus/%02d-%s-%d.png"
-                          id
-                          name
-                          (System/currentTimeMillis)))]
-        (javax.imageio.ImageIO/write cropped-to-face "png" file)
-        (print ".")
-        (flush)
-        (Thread/sleep 500)))
+                                                        corpus/NORMAL_W
+                                                        corpus/NORMAL_H)]
+        (corpus/add-face id name cropped-to-face))
+      (print ".")
+      (flush)
+      (Thread/sleep 500))
     (recur)))
 
 (defn- predict-face [face image recognizer]
   (let [cropped (images/ipl->cropped-to-face image
                                              face
-                                             FACE_IMG_SIZE
-                                             FACE_IMG_SIZE)
+                                             corpus/NORMAL_W
+                                             corpus/NORMAL_H)
         prediction (recognizer cropped)]
     (merge face prediction)))
 
@@ -85,7 +82,7 @@
   (detector img))
 
 (defn show-images [grabber image faces screen recognize?]
-  (let [detector (faces/detector)
+  (let [detector (detect/detector)
         recognizer (when recognize?
                      (recognize/recognizer))]
     (loop []
