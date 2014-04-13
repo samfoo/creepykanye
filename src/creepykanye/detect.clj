@@ -5,6 +5,19 @@
             opencv_highgui
             opencv_imgproc]))
 
+(defn extract-faces [rect-ptr]
+  (loop [i 0
+         faces []]
+    (if (< i (.limit rect-ptr))
+      (do
+        (.position rect-ptr i)
+        (recur (inc i)
+               (conj faces {:x (.x rect-ptr)
+                            :y (.y rect-ptr)
+                            :width (.width rect-ptr)
+                            :height (.height rect-ptr)})))
+      faces)))
+
 (defn detector []
   (let [config (-> "haarcascade_frontalface_alt.xml"
                    (clojure.java.io/resource)
@@ -23,15 +36,9 @@
                            opencv_objdetect/CV_HAAR_SCALE_IMAGE
                            min-size
                            max-size)
-        (if (= 0 (.capacity faces))
-          nil
-          {:x (.x faces)
-           :y (.y faces)
-           :width (.width faces)
-           :height (.height faces)})))))
+        (extract-faces faces)))))
 
 (defn center-point [rect]
-  (println rect)
   (let [x (+ (:x rect) (/ (:width rect) 2))
         y (+ (:y rect) (/ (:width rect) 2))
         p (com.googlecode.javacv.cpp.opencv_core$CvPoint.)]
