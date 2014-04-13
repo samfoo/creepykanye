@@ -82,7 +82,7 @@
   (detector img))
 
 (defn show-images [grabber image faces screen recognize?]
-  (let [detector (detect/detector)
+  (let [detector (detect/face-detector)
         recognizer (when recognize?
                      (recognize/recognizer))]
     (loop []
