@@ -5,7 +5,7 @@
             opencv_highgui
             opencv_imgproc]))
 
-(defn extract-objects [rect-ptr]
+(defn- extract-objects [rect-ptr]
   (loop [i 0
          objects []]
     (if (< i (.limit rect-ptr))
@@ -44,6 +44,21 @@
 
 (defn eye-detector []
   (object-detector "haarcascade_eye.xml" 100 150))
+
+(defn key-points [image]
+  (let [detector (com.googlecode.javacv.cpp.opencv_features2d$GFTTDetector.
+                  500 0.01 10 3 false 0.04)
+        points-ptr (com.googlecode.javacv.cpp.opencv_features2d$KeyPoint.)]
+    (.detect detector image points-ptr nil)
+    (loop [i 0
+           points []]
+      (if (< i (.limit points-ptr))
+        (do
+          (.position points-ptr i)
+          (recur (inc i)
+                 (conj points {:x (.pt_x points-ptr)
+                               :y (.pt_y points-ptr)})))
+        points))))
 
 (defn center-point [rect]
   (let [x (+ (:x rect) (/ (:width rect) 2))

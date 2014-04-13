@@ -26,6 +26,13 @@
                        (graphics/style :foreground (choose-color i) :stroke 5))
         (recur (rest os) (inc i))))))
 
+(defn points [g points]
+  (doseq [p points]
+    (graphics/draw g
+                   (graphics/circle (:x p) (:y p) 2)
+                   (graphics/style :foreground :lime
+                                   :background :lime))))
+
 (defn label [g objects]
   (loop [os objects
          i 0]
